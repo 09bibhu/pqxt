@@ -9,42 +9,47 @@
 #include "tools.h"
 
 
-int main(){
-
-    srand(time(NULL));
+int main()
+{
+    int nMask11, nMask12;
+                        	
+    nMask11 = (1 << 18) - 1;
     
-    signed long time_in_micros_start_c, time_in_micros_end_c, time_in_micros_total_c = 0;
+    int i = 0, j = 0, h = 0, k = 0, l = 0, cnt = 0, counter = 0, success = 0, total = 0;
 
-    struct timeval tv_start, tv_end;
+    uint8_t r[16] = {0}, update_r[16] = {0}, upnonce_r[8] = {0}, upnonce_w[8] = {0};
+    uint8_t nonce_w[8] = {0}, nonce_r[8] = {0}, nonce_id[8] = {0};
+
+    int A_bar[N][M-W] = {0}, X_w[N][N] = {0}, upX_w[N][N] = {0},  X_id[N][N] = {0}, Xt_id[N][N] = {0};
     
-    int cnt = 0, counter = 0, success = 0, total = 0;
-
-    //uint8_t r[sizewid][16], update_r[sizeid][16], nonce_w[sizew][8], nonce_r[sizewid][8], nonce_id[sizewid][8];
-    uint8_t r[16] = {0}, update_r[16] = {0}, upnonce_r[8] = {0}, upnonce_w[8] = {0}, nonce_w[8] = {0}, nonce_r[8] = {0}, nonce_id[8] = {0};
-
-    //int X_w[sizew][N][N], X_id[sizewid][N][N];;
-    int A_bar[N][M - W] = {0}, X_w[N][N] = {0}, upX_w[N][N] = {0}, count[sizew] = {0}, X_id[N][N] = {0}, Xt_id[N][N] = {0};
+    int TD[M-W][W] = {0}, update_TD[M-W][W] = {0}, Z[N][M] = {0}, update_Z[N][M] = {0};
     
-    //int TD[sizewid][M - W][W], update_TD[sizeid][M - W][W], Z[sizewid][N][M], update_Z[sizeid][N][M];
-    int TD[M - W][W] = {0}, update_TD[M - W][W] = {0}, Z[N][M] = {0}, update_Z[N][M] = {0};
+    int count[sizew] = {0},num[sizew] = {0}, * arr;
 
     char DB[sizew][sizeid];
     
-    //int xtag[sizewid][N][N] = {0};
+    //Initializing Empty Database
+    for(i = 0; i < sizew; i ++)
+    {
+    	for(j = 0; j < sizeid; j ++)
+    		DB[i][j] = 0;
+    }
+    
+    //Initializing Empty xtag
     int ***xtag = malloc(sizewid * sizeof(int **));
     if (xtag == NULL) {
         perror("malloc failed for xtag");
         exit(EXIT_FAILURE);
     }
 
-    for (int i = 0; i < sizewid; i++) {
+    for (i = 0; i < sizewid; i++) {
         xtag[i] = malloc(N * sizeof(int *));
         if (xtag[i] == NULL) {
             perror("malloc failed for xtag[i]");
             exit(EXIT_FAILURE);
         }
 
-        for (int j = 0; j < N; j++) {
+        for (j = 0; j < N; j++) {
             xtag[i][j] = calloc(N, sizeof(int));  // zero-initialized
             if (xtag[i][j] == NULL) {
                 perror("calloc failed for xtag[i][j]");
@@ -53,21 +58,21 @@ int main(){
         }
     }
 
-    //int xtag_prime[sizeid][N][N] = {0};
+    //Initializing Empty xtag'
     int ***xtag_prime = malloc(sizeid * sizeof(int **));
     if (xtag_prime == NULL) {
         perror("malloc failed for xtag_prime");
         exit(EXIT_FAILURE);
     }
 
-    for (int i = 0; i < sizeid; i++) {
+    for (i = 0; i < sizeid; i++) {
         xtag_prime[i] = malloc(N * sizeof(int *));
         if (xtag_prime[i] == NULL) {
             perror("malloc failed for xtag_prime[i]");
             exit(EXIT_FAILURE);
         }
 
-        for (int j = 0; j < N; j++) {
+        for (j = 0; j < N; j++) {
             xtag_prime[i][j] = calloc(N, sizeof(int));  // zero-initialized
             if (xtag_prime[i][j] == NULL) {
                 perror("calloc failed for xtag_prime[i][j]");
@@ -76,21 +81,21 @@ int main(){
         }
     }
   
-    //int y[sizewid][N][M];
+    //Initializing Empty y
     int ***y = malloc(sizewid * sizeof(int **));
     if (y == NULL) {
         perror("malloc failed for y");
         exit(EXIT_FAILURE);
     }
 
-    for (int i = 0; i < sizewid; i++) {
+    for (i = 0; i < sizewid; i++) {
         y[i] = malloc(N * sizeof(int *));
         if (y[i] == NULL) {
             perror("malloc failed for y[i]");
             exit(EXIT_FAILURE);
         }
 
-        for (int j = 0; j < N; j++) {
+        for (j = 0; j < N; j++) {
             y[i][j] = calloc(M, sizeof(int));  // zero-initialized
             if (y[i][j] == NULL) {
                 perror("calloc failed for y[i][j]");
@@ -99,21 +104,21 @@ int main(){
         }
     }
 
-    //int yt[sizeid][M][N];
+    //Initializing Empty y^T
     int ***yt = malloc(sizewid * sizeof(int **));
     if (yt == NULL) {
         perror("malloc failed for yt");
         exit(EXIT_FAILURE);
     }
 
-    for (int i = 0; i < sizewid; i++) {
+    for (i = 0; i < sizewid; i++) {
         yt[i] = malloc(M * sizeof(int *));
         if (yt[i] == NULL) {
             perror("malloc failed for yt[i]");
             exit(EXIT_FAILURE);
         }
 
-        for (int j = 0; j < M; j++) {
+        for (j = 0; j < M; j++) {
             yt[i][j] = calloc(N, sizeof(int));  // zero-initialized
             if (yt[i][j] == NULL) {
                 perror("calloc failed for yt[i][j]");
@@ -122,21 +127,21 @@ int main(){
         }
     }
    
-    //int xtoken[sizeid][N][M];
+    //Initializing Empty xtoken
     int ***xtoken = malloc(sizeid * sizeof(int **));
     if (xtoken == NULL) {
         perror("malloc failed for xtoken");
         exit(EXIT_FAILURE);
     }
 
-    for (int i = 0; i < sizeid; i++) {
+    for (i = 0; i < sizeid; i++) {
         xtoken[i] = malloc(N * sizeof(int *));
         if (xtoken[i] == NULL) {
             perror("malloc failed for xtoken[i]");
             exit(EXIT_FAILURE);
         }
 
-        for (int j = 0; j < N; j++) {
+        for (j = 0; j < N; j++) {
             xtoken[i][j] = calloc(M, sizeof(int));  // zero-initialized
             if (xtoken[i][j] == NULL) {
                 perror("calloc failed for xtoken[i][j]");
@@ -145,172 +150,186 @@ int main(){
         }
     }
 
+    //Taking Frequency From Client
+    for(i = 0; i < sizew; i++)
+    {
+    	printf("\nEnter frequency of keyword w_%d: ", i);
+    	scanf("%d", & num[i]);
+    }
+    
+    srand(time(NULL));
+    
     // Generate Random Database
-    for(int i = 0; i < sizew; i++){
-        for(int j = 0; j < sizeid; j++){
-            //DB[i][j] = rand() % 2;
-            if(i % 4 == 0) {
-            	if(j % 500 == 0)
-            		DB[i][j] = 1;
-            	else 
-            		DB[i][j] = 0;
-            }
-            else if(1) {
-            	if(j % 3 != 1)
-            		DB[i][j] = 1;
-            	else 
-            		DB[i][j] = 0;
-            }
-            /*else if(i % 4 == 2) {
-            	if(j % 4 != 2)
-            		DB[i][j] = 1;
-            	else 
-            		DB[i][j] = 0;
-            }
-            else {
-            	if(j % 4 != 3)
-            		DB[i][j] = 1;
-            	else 
-            		DB[i][j] = 0;
-            }*/
-            //printf("%d ",DB[i][j]);
-        }
-        //printf("\n");
+    for(i = 0; i < sizew; i++)
+    {
+    	arr = (int *) malloc (num[i] * sizeof(int));
+    	if (arr == NULL) 
+    	{
+        	printf("Memory allocation failed.\n");
+        	return 1;
+    	}
+
+    	for (j = 0; j < num[i]; j ++) 
+        	arr[j] = j;
+    	
+    	shuffle(arr, num[i]);
+    	
+        for(j = 0; j < num[i]; j++)
+            DB[i][arr[j]] = 1;
+        
+        free( arr );
     }
     
     //SetUp
     
-    tv_start = GetTimeStamp(); // Calculate time
-    time_in_micros_start_c = 1000000 * tv_start.tv_sec + tv_start.tv_usec; // Store time in microseconds
-
     generate_Random_matrix(A_bar);
 
-    for(int h = 0; h < sizew; h++){
+    for(h = 0; h < sizew; h++)
+    {
         dectohex(nonce_w, h);
 
         generate_Random_matrix_X_w(X_w, nonce_w);
 
         count[h] = 0;
         
-        for(int l = 0; l < sizeid; l++){
-            if(DB[h][l] == 1){
+        for(l = 0; l < sizeid; l++)
+        {
+            if(l < num[h] && DB[h][l] == 1)
+            {
+            	printf("\nupdating for w_%d, id_%d\n", h, l);
+            	
                 count[h] = count[h] + 1;
                 cnt = count[h] - 1;
 
                 dectohex(nonce_r, (sizeid * h) + cnt);
                 generate_random(r,nonce_r);
+                
                 Gen_Trapdoor(Z, A_bar, TD, r);
 
                 dectohex(nonce_id, l);
                 generate_Random_matrix_X_id(X_id, nonce_id);
 
-                for(int i = 0;i < N; i++){
-                    for(int j = 0; j < N;j++)
+                for(i = 0; i < N; i++)
+                {
+                    for(j = 0; j < N;j++)
                         Xt_id[i][j] = X_id[j][i];
                 }
 
-                for(int i = 0; i < N; i++){
+                for(i = 0; i < N; i++){
                     SampleD_MP(A_bar, TD, Xt_id[i], y[(sizeid * h) + cnt][i]);
                 }
                 
-                for(int i = 0; i < N; i++){
-                    for(int j = 0; j < N; j++){
-                        for(int k = 0; k < N; k++)
+                for(i = 0; i < N; i++)
+                {
+                    for(j = 0; j < N; j++)
+                    {
+                        for(k = 0; k < N; k++)
                             xtag[(sizeid * h) + cnt][i][j] = (xtag[(sizeid * h) + cnt][i][j] + (X_w[i][k] * X_id[k][j])) % Q;
-                        if( xtag[(sizeid * h) + cnt][i][j] < 0)
-                            	xtag[(sizeid * h) + cnt][i][j] += Q;
-                        xtag[(sizeid * h) + cnt][i][j] = rounding((double)(((double)P/Q) * xtag[(sizeid * h) + cnt][i][j])) % P;       
+                            
+                        if( xtag[(sizeid * h) + cnt][i][j] >= Q)
+                            	xtag[(sizeid * h) + cnt][i][j] -= Q;
+                            	
+                        {	
+                        	nMask12 = nMask11 & xtag[(sizeid * h) + cnt][i][j];
+                        	
+                        	if (nMask12 > (1 << 17))
+	                        	xtag[(sizeid * h) + cnt][i][j] = ((xtag[(sizeid * h) + cnt][i][j] >> 18) + 1) % P;
+	                        else
+	                        	xtag[(sizeid * h) + cnt][i][j] = (xtag[(sizeid * h) + cnt][i][j] >> 18) % P;                    	 
+                        }
                     }
                 }
             }
         }
     }
     
-    tv_end = GetTimeStamp(); // Calculate time
-    time_in_micros_end_c = 1000000 * tv_end.tv_sec + tv_end.tv_usec; // Store time in microseconds
-
-    time_in_micros_total_c += (time_in_micros_end_c - time_in_micros_start_c);
-	
-    printf("\nElapsed time Setup: %ld microseconds\n", time_in_micros_total_c);
-    
     //Search
-    
-    tv_start = GetTimeStamp(); // Calculate time
-    time_in_micros_start_c = 1000000 * tv_start.tv_sec + tv_start.tv_usec; // Store time in microseconds
-    
+   
     dectohex(upnonce_w, 1);
     generate_Random_matrix_X_w(upX_w, upnonce_w);
 
-    for(int h = 0; h < count[0]; h++){
+    for(h = 0; h < count[0]; h++)
+    {
     	dectohex(upnonce_r, h);
         generate_random(update_r, upnonce_r);
+        
         Gen_Trapdoor(update_Z, A_bar, update_TD, update_r);
-        for(int i = 0; i < N;i++){
-            for(int j = 0; j < M;j++){
-                for(int k = 0; k < N;k++)
+        
+        for(i = 0; i < N; i++)
+        {
+            for(j = 0; j < M; j++)
+            {
+                for(k = 0; k < N;k++)
                     xtoken[h][i][j] = (xtoken[h][i][j] + (upX_w[i][k] * update_Z[k][j])) % Q;
-                if( xtoken[h][i][j] < 0)
-                    xtoken[h][i][j] += Q;
-                xtoken[h][i][j] = rounding((double)(((double)P/Q) * xtoken[h][i][j])) % P;
+                    
+                if(xtoken[h][i][j] >= Q)
+                    xtoken[h][i][j] -= Q;
                 
+                {	
+                	nMask12 = nMask11 & xtoken[h][i][j];
+                        	
+                        if (nMask12 > (1 << 17))
+	                       	xtoken[h][i][j] = ((xtoken[h][i][j] >> 18) + 1) % P;
+	                else
+	                       	xtoken[h][i][j] = (xtoken[h][i][j] >> 18) % P;                    	 
+                }
             }
         }
     }
    
-    for(int h = 0; h < count[0];h++){
-        for(int i = 0;i < M;i++){
-            for(int j = 0; j < N;j++)
+    for(h = 0; h < count[0];h++)
+    {
+        for(i = 0;i < M;i++)
+        {
+            for(j = 0; j < N;j++)
                 yt[h][i][j] = y[h][j][i];
         }
-    
     }
 
-    for(int h = 0; h < count[0]; h++){
-        for(int i = 0; i < N; i++){
-            for(int j = 0; j < N; j++){
-                for(int k = 0; k < M; k++)
+    for(h = 0; h < count[0]; h++)
+    {
+        for(i = 0; i < N; i++)
+        {
+            for(j = 0; j < N; j++)
+            {
+                for(k = 0; k < M; k++)
                     xtag_prime[h][i][j] = (xtag_prime[h][i][j] + (xtoken[h][i][k] * yt[h][k][j])) % Q;
-                if( xtag_prime[h][i][j] < 0)
-                    xtag_prime[h][i][j] += Q;
-                xtag_prime[h][i][j] = rounding((double)(((double)P/Q) * xtag_prime[h][i][j])) % P;
+                
+                if( xtag_prime[h][i][j] > Q)
+                    xtag_prime[h][i][j] -= Q;
+                
+                {	
+                	nMask12 = nMask11 & xtag_prime[h][i][j];
+                        	
+                        if (nMask12 > (1 << 17))
+	                       	xtag_prime[h][i][j] = ((xtag_prime[h][i][j] >> 18) + 1) % P;
+	                else
+	                       	xtag_prime[h][i][j] = (xtag_prime[h][i][j] >> 18) % P;                    	 
+                }        
             }
         }
     }
-
-    tv_end = GetTimeStamp(); // Calculate time
-    time_in_micros_end_c = 1000000 * tv_end.tv_sec + tv_end.tv_usec; // Store time in microseconds
-
-    time_in_micros_total_c += (time_in_micros_end_c - time_in_micros_start_c);
-	
-    printf("\nElapsed time Search 1: %ld microseconds\n", time_in_micros_total_c);
     
-    for(int i = 0; i < sizeid; i++){
-        if(DB[0][i] == 1){
-            for(int j = 0; j < count[1]; j++){
+    for(i = 0; i < sizeid; i++)
+    {
+        if(DB[0][i] == 1)
+        {
+            for(j = 0; j < count[1]; j++)
+            {
                 success = areMatricesEqual(xtag_prime[counter], xtag[sizeid + j]);
-                if(success == 1){
+                if(success == 1)
+                {
                     total++;
-                    //printf("id_%d exists in intersection.\n",i + 1);
+                    printf("\nid_%d exists in intersection.\n",i);
                     break;
                 }
             }
+            
             counter++;
         }
     }
     
-    tv_end = GetTimeStamp(); // Calculate time
-    time_in_micros_end_c = 1000000 * tv_end.tv_sec + tv_end.tv_usec; // Store time in microseconds
-
-    time_in_micros_total_c += (time_in_micros_end_c - time_in_micros_start_c);
-	
-    printf("\nElapsed time Search 2: %ld microseconds\n", time_in_micros_total_c);
-
-    printf("Number of identifiers in the intersection is %d.\n",total);
+    printf("\nNumber of identifiers in the intersection is %d.\n",total);
     
     return 0;
-   
 }
-
-
-
-

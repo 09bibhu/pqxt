@@ -17,9 +17,9 @@
 #define ROWS 2
 #define COLS 2
 
-#define sizew 2
-#define sizeid 100
-#define sizewid 200
+#define sizew 5
+#define sizeid 100000
+#define sizewid 500000
 
 #define AES_BLOCK_SIZE 16
 
@@ -754,3 +754,4 @@ void SampleD_MP(int A_prime[N][M - W], int R[M - W][W], int u[N], int x[M])
 }
 
 #endif
+
